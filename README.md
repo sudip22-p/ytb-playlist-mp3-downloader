@@ -1,6 +1,6 @@
-# 🎵 YouTube Playlist Audio Downloader (MP3)
+# 🎵 YouTube Audio Downloader (MP3) - Playlists & Single Songs
 
-A lightweight, reliable Python script to download YouTube playlists as high-quality, sequentially numbered MP3 tracks. Works cross-platform on **Windows, macOS, Linux, and iOS** (via terminal environments).
+A lightweight, reliable Python script to download YouTube playlists and single songs as high-quality MP3 tracks with clean titles. Works cross-platform on **Windows, macOS, Linux, and iOS** (via terminal environments).
 
 The resulting MP3 files are universally playable offline on **Windows, macOS, Linux, iOS (iPhone/iPad), and Android**.
 
@@ -8,9 +8,11 @@ The resulting MP3 files are universally playable offline on **Windows, macOS, Li
 
 ## ✨ Features
 
+- **Playlists & Single Videos**: Paste an entire playlist URL or a single video URL.
+- **Smart URL Detection**: If a link contains both a video and a playlist parameter, choose whether to grab the full playlist or just that single song.
 - **Audio-Only Download**: Downloads audio streams directly without fetching video.
 - **192 kbps MP3 Conversion**: Converts tracks into MP3 format and embeds ID3 tags (Title, Artist, Album).
-- **Preserves Playlist Order**: Names files sequentially with zero-padded prefixes (e.g., `001 - Song Title.mp3`).
+- **Clean Naming**: Saves tracks cleanly with their original title (e.g., `Song Title.mp3`) without `001 -` prefixes.
 - **Resuming & Duplicate Skipping**: Maintains a `download_archive.txt` file so interrupted downloads resume seamlessly and existing tracks are never re-downloaded.
 - **Fault-Tolerant with Retry**: Continues through network glitches and offers an instant retry prompt for any failed tracks.
 - **Built-in Anti-403 Protection**: Uses mobile/embedded stream clients to avoid YouTube's `HTTP Error 403: Forbidden` rate limits.
@@ -107,10 +109,15 @@ python playlist_downloader.py
 
 ## 📝 Usage Prompts
 
-1. **Playlist URL**: Paste your YouTube playlist or single video URL:
+1. **Enter URL**: Paste any YouTube playlist URL or single video URL:
    ```text
-   Enter YouTube Playlist URL: https://www.youtube.com/playlist?list=PL...
+   Enter YouTube URL (Playlist or Single Video, 'q' to quit):
    ```
+   - If the link contains both a video and a playlist parameter (`watch?v=...&list=...`), the script asks:
+     ```text
+     [1] Download the ENTIRE playlist (Default)
+     [2] Download ONLY this single song
+     ```
 2. **Destination Folder**: Press **Enter** to use the default `./downloads` folder, or type a custom path (e.g., `D:\Music\My Playlist`).
 3. **Browser Cookies (Optional)**: If any tracks are age-restricted or strictly blocked, enter your browser name (`chrome`, `edge`, `firefox`, `brave`, or `safari`), or simply press **Enter** to skip.
 

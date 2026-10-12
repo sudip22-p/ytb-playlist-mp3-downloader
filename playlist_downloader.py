@@ -8,7 +8,7 @@ Windows, macOS, Android, and iOS devices.
 Features:
 - Downloads highest quality audio stream without downloading video.
 - Converts audio to MP3 at 192 kbps using FFmpeg.
-- Preserves playlist track order with numbered filenames (e.g. '001 - Song Title.mp3').
+- Saves clean filenames using the song title (e.g. 'Song Title.mp3') without numeric prefixes.
 - Embeds track metadata (title, artist, album) into the MP3 tags.
 - Built-in Anti-403 Protection: Uses mobile/embedded player clients (Android, iOS)
   and chunked streaming to avoid YouTube 'HTTP Error 403: Forbidden'.
@@ -159,17 +159,17 @@ def check_dependencies() -> bool:
 
 def get_playlist_url() -> str:
     """
-    Prompt the user to enter a valid YouTube playlist URL.
-    Handles extra whitespace and quotation marks.
+    Prompt the user to enter a valid YouTube URL (playlist or single video).
+    Handles extra whitespace, quotation marks, and allows choosing between
+    the entire playlist or just the single video if both are in the URL.
     """
     while True:
         try:
-            raw_url = input("\nEnter YouTube Playlist URL (or 'q' to quit): ").strip()
+            raw_url = input("\nEnter YouTube URL (Playlist or Single Video, 'q' to quit): ").strip()
         except (KeyboardInterrupt, EOFError):
             print("\nExiting.")
             sys.exit(0)
 
-        # Remove surrounding quotes if user copied as path/quoted string
         url = raw_url.strip("'\"").strip()
 
         if not url:
@@ -183,10 +183,31 @@ def get_playlist_url() -> str:
         # Basic validation: ensure it looks like a YouTube URL
         if not ("youtube.com" in url.lower() or "youtu.be" in url.lower()):
             print("[!] That does not look like a YouTube URL.")
-            print("    Example: https://www.youtube.com/playlist?list=PL...")
+            print("    Examples:")
+            print("      Playlist: https://www.youtube.com/playlist?list=PL...")
+            print("      Single:   https://www.youtube.com/watch?v=...")
             retry = input("    Use this URL anyway? (y/N): ").strip().lower()
             if retry not in ("y", "yes"):
                 continue
+
+        # Check if URL contains both a specific video and a playlist parameter
+        has_video = ("watch?v=" in url or "youtu.be/" in url) and ("list=" in url)
+        if has_video:
+            print("\n[?] This URL points to a specific video inside a playlist:")
+            print("    [1] Download the ENTIRE playlist (Default)")
+            print("    [2] Download ONLY this single song")
+            try:
+                choice = input("    Choose option [1/2, default: 1]: ").strip()
+            except (KeyboardInterrupt, EOFError):
+                choice = "1"
+            if choice == "2":
+                # Remove &list=... or ?list=... to download only the single track
+                url = re.sub(r"[?&]list=[^&]+", "", url)
+                if "?" not in url and "&" in url:
+                    url = url.replace("&", "?", 1)
+                print("    -> Selected: Single song only.")
+            else:
+                print("    -> Selected: Entire playlist.")
 
         return url
 
@@ -463,14 +484,11 @@ def download_single_track(
     track_title = track_info.get("title", "Unknown Title")
     track_url = track_info.get("url")
 
-    # Format zero-padded track number prefix
-    padding_width = max(3, len(str(total_tracks)))
-    prefix = f"{track_number:0{padding_width}d}"
+    # Clean filename without numeric prefix (e.g. "Song Title.mp3")
+    track_header = f"[{track_number}/{total_tracks}] {track_title}"
+    outtmpl = os.path.join(destination_dir, "%(title)s.%(ext)s")
 
-    track_header = f"[{track_number}/{total_tracks}] {prefix} - {track_title}"
     print(f"\n{track_header}")
-
-    outtmpl = os.path.join(destination_dir, f"{prefix} - %(title)s.%(ext)s")
     tracker = ProgressTracker(track_header)
 
     # Attempt 1: Using Primary Mobile Player Clients (Android, iOS)
@@ -538,7 +556,7 @@ def display_summary(
     if failed_tracks:
         print("\n[!] The following tracks encountered errors:")
         for track_num, title, err in failed_tracks:
-            print(f"    - Track {track_num:03d}: {title}")
+            print(f"    - Track {track_num}: {title}")
             print(f"      Reason: {err}")
         print("\nNote: You can run the script again to resume; successfully")
         print("downloaded tracks will be preserved and not re-downloaded.")
@@ -632,8 +650,12 @@ def main() -> None:
 
     total_tracks = len(tracks)
     print("\n" + "-" * 60)
-    print(f" Playlist : {playlist_title}")
-    print(f" Total    : {total_tracks} track(s) found")
+    if total_tracks == 1:
+        print(f" Track    : {tracks[0].get('title', playlist_title)}")
+        print(f" Mode     : Single Video / Song Download")
+    else:
+        print(f" Playlist : {playlist_title}")
+        print(f" Total    : {total_tracks} track(s) found")
     print(f" Save to  : {destination_dir}")
     print(f" Format   : MP3 @ {DEFAULT_BITRATE} kbps")
     if browser_cookie:
@@ -657,8 +679,7 @@ def main() -> None:
 
         # Check if already in download archive
         if track_id and track_id in archived_ids:
-            prefix = f"{index:0{padding_width}d}"
-            print(f"\n[{index}/{total_tracks}] {prefix} - {track_title}")
+            print(f"\n[{index}/{total_tracks}] {track_title}")
             print("    [SKIPPED] Already downloaded (recorded in archive).")
             skipped_tracks.append(track_title)
             continue
