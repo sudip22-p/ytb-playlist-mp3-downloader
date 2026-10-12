@@ -1,0 +1,18 @@
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Downloaded files & temporary archives
+downloads/
+*.mp3
+*.m4a
+*.webm
+*.opus
+download_archive.txt
+.test_write_perm.tmp
+
